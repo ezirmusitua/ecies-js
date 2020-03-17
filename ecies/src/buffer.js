@@ -110,6 +110,34 @@ function fromBase64(input) {
 }
 
 /**
+ * asciiToUint8Array
+ * @param {String} str
+ * @returns {Uint8Array}
+ */
+function asciiToUint8Array(str) {
+  const chars = [];
+  for (let i = 0; i < str.length; ++i) {
+    chars.push(str.charCodeAt(i));
+  }
+  return new Uint8Array(chars);
+}
+
+/**
+ * uint8ArrayToAscii
+ * @param {Uint8Array} array
+ * @returns {String}
+ */
+function uint8ArrayToAscii(array) {
+  const ui8array = formatToTyped(array, Uint8Array);
+  let result = "";
+  for (let i = 0; i < ui8array.byteLength; i++) {
+    result += String.fromCharCode(ui8array[i]);
+  }
+  return result;
+}
+
+
+/**
  * toBase64
  * @param {Uint8Array} input
  * @returns {String}
@@ -126,5 +154,6 @@ module.exports = {
   unicodeToUint8Array,
   uint8ArrayToUnicode,
   fromBase64,
-  toBase64
+  toBase64,
+  formatToTyped
 };

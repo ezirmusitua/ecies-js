@@ -1,5 +1,5 @@
 const sha256 = require("sha256");
-const { concatArrayBuffer, formatToTyped } = require("./utils");
+const { concatArrayBuffer, formatToTyped } = require("./buffer");
 
 const HASHERS = { sha256: sha256 };
 

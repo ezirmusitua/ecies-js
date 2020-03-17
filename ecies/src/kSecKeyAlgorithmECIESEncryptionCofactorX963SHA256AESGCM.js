@@ -1,7 +1,13 @@
 const { ECIES, EC_ALGOS } = require("./ecies");
 const { X963KDF } = require("./kdf");
 const { AES_GCM } = require("./aes");
-const { concatArrayBuffer, fromBase64, unicodeToUint8Array, toBase64 } = require("./buffer");
+const {
+  concatArrayBuffer,
+  fromBase64,
+  unicodeToUint8Array,
+  toBase64,
+  formatToTyped
+} = require("./buffer");
 
 const AES_GCM_IV_BYTES_LEN = 16;
 const KDF_HASH_ALGO = "sha256";
@@ -12,8 +18,8 @@ class InputHandler {
   }
   formatInput(i, enc = "utf8") {
     if (i instanceof ArrayBuffer || ArrayBuffer.isView(i))
-      return formatToType(i, Uint8Array);
-    if (enc === 'base64') return fromBase64(i);
+      return formatToTyped(i, Uint8Array);
+    if (enc === "base64") return fromBase64(i);
     return unicodeToUint8Array(i);
   }
   getMessage(i) {
@@ -29,13 +35,18 @@ class InputHandler {
 
 class OutputHandler {
   constructor() {}
-  concat(eciesInstance) {
-    if (eciesInstance.aesHandler.ciphertext)
-      return eciesInstance.aesHandler.plaintext.toString();
-    const publicCodePoint = eciesInstance.ecdh.publicCodePoint;
+  buildDec(eciesInstance) {
+    return uint8ArrayToUnicode(eciesInstance.aesHandler.plaintext);
+  }
+  buildEnc(eciesInstance) {
+    const publicCodePoint = formatToTyped(eciesInstance.ecdh.getPublic().encode(), Uint8Array);
     const encrypted = eciesInstance.aesHandler.ciphertext;
     const tag = eciesInstance.aesHandler.tag;
-    return toBase64(concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array));
+    console.log(concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array));
+    // return toBase64(
+    //   concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array)
+    // );
+    return concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array)
   }
 }
 
@@ -72,7 +83,7 @@ function kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM(ecAlgo) {
         .computeSecret(pubKey)
         .deriveKey(ecies.ecdh.publicCodePoint)
         .encrypt()
-        .output();
+        .outputEnc();
     },
     decrypt(prvKey, ciphertext) {
       const ecies = createECIESInstance(
@@ -85,7 +96,7 @@ function kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM(ecAlgo) {
         .computeSecret(null, prvKey)
         .deriveKey(ecies.inputHandler.getEphemeralPublicKey(ciphertext))
         .decrypt()
-        .output();
+        .outputDec();
     }
   };
 }

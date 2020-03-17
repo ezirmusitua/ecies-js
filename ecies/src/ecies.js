@@ -11,10 +11,8 @@
 // const crypto = require("crypto");
 // crypto.createCipherIv - aes-256-gcm
 
-import { x963kdf } from "./kdf";
-import { aesGcmEncrypt, aesGcmDecrypt } from "./aes";
-import { concatArrayBuffer, formatToTyped, toBase64 } from "./utils";
-import { ec as EC } from "elliptic";
+const { ec } = require("elliptic");
+const EC = ec;
 
 const SupportedECAlogs = ["p256", "secp256k1", "p384", "p521"];
 
@@ -35,19 +33,9 @@ const Curves = SupportedECAlogs.reduce((res, c) => {
   return res;
 }, {});
 
-export function generateKeyPair() {
-  return P256Curve.genKeyPair();
-}
-
-export function computeSecret(privateKey, publicKey) {
-  const privateKeyPair = P256Curve.keyFromPrivate(privateKey);
-  const publicKeyPair = P256Curve.keyFromPublic(publicKey);
-  return privateKeyPair.derive(publicKeyPair.getPublic());
-}
-
 class ECIES {
   constructor(ecAlgo, aesKeyBytesLen, aesIvBytesLen) {
-    this._ecAlgo = EC_ALGOS[ecAlgo];
+    this._ecAlgo = ecAlgo;
     if (!this._ecAlgo) {
       throw new Error("Invalid EC Curve Name: " + ecAlgo);
     }
@@ -103,12 +91,12 @@ class ECIES {
       );
     }
     if (userPubKey) {
-      this.ecdh = Curves[this.ecAlgo].genKeyPair();
-      const publicKeyPair = P256Curve.keyFromPublic(userPubKey);
+      this.ecdh = Curves[this._ecAlgo].genKeyPair();
+      const publicKeyPair = Curves[this._ecAlgo].keyFromPublic(userPubKey);
       this._sharedSecret = this.ecdh.derive(publicKeyPair.getPublic());
       return this;
     }
-    this.ecdh = Curves[this.ecAlgo].keyFromPrivate(userPrvKey);
+    this.ecdh = Curves[this._ecAlgo].keyFromPrivate(userPrvKey);
     if (!this.inputHandler) {
       throw new Error("Set Input Handler Before Compute Shared Secret");
     }
@@ -118,7 +106,9 @@ class ECIES {
     const ephemeralPublicKey = this.inputHandler.getEphemeralPublicKey(
       this._ciphertext
     );
-    const ephemeralPublicKeyPair = P256Curve.keyFromPublic(ephemeralPublicKey);
+    const ephemeralPublicKeyPair = Curves[this._ecAlgo].keyFromPublic(
+      ephemeralPublicKey
+    );
     this._sharedSecret = this.ecdh.derive(ephemeralPublicKeyPair.getPublic());
     return this;
   }
@@ -157,13 +147,17 @@ class ECIES {
     return this;
   }
 
-  output() {
-    return this.outputHandler.concat(this);
+  outputEnc() {
+    return this.outputHandler.buildEnc(this);
+  }
+  outputDec() {
+    return this.outputHandler.buildDec(this);
   }
 }
 
 module.exports = {
-  ECIES
+  ECIES,
+  EC_ALGOS
 };
 
 // const KDF_DIGEST_ALGO = "sha256";

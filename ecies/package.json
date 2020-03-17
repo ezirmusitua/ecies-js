@@ -14,10 +14,12 @@
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
+    "browserify": "^16.5.0",
     "eslint": "^6.7.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bundle": "browserify -e index.js -o dist/ecies.js"
   },
   "author": "",
   "license": "ISC"

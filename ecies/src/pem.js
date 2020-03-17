@@ -1,7 +1,7 @@
-import { Key } from "js-crypto-key-utils";
-import * as ECKey from "eckey";
-import * as conv from "binstring";
-import * as x509 from '@fidm/x509';
+const { Key } = require("js-crypto-key-utils");
+const ECKey = require("eckey");
+const conv = require("binstring");
+const x509 = require("@fidm/x509");
 
 const EC_ALGOS = {
   secp256r1: "P-256",
@@ -23,13 +23,10 @@ function readPublicKeyFromCertPem(pemContent) {
 async function readPrivateKeyFromKeyPem(pemContent, ecAlgo = "prime256v1") {
   const keyObj = new Key("pem", pemContent, { namedCurve: EC_ALGOS[ecAlgo] });
   const prvKeyInHex = await keyObj.oct;
-  return new ECKey(
-    conv(prvKeyInHex, { in: "hex", out: "buffer" }),
-    false
-  ).key;
+  return new ECKey(conv(prvKeyInHex, { in: "hex", out: "buffer" }), false).key;
 }
 
 module.exports = {
   readPrivateKeyFromKeyPem,
   readPublicKeyFromCertPem
-}
+};

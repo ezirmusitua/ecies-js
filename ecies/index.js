@@ -1,4 +1,4 @@
-const { EC_ALGOS, ECIES } = require("./src/ecies");
+const { ECIES } = require("./src/ecies");
 const { X963KDF } = require("./src/kdf");
 const { AES_GCM } = require("./src/aes");
 const { readPrivateKeyFromKeyPem, readPublicKeyFromCertPem } = require("./src/pem");

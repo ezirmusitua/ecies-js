@@ -1,5 +1,5 @@
-import { formatToTyped } from "./utils";
-import { AES_GCM } from "asmcrypto.js";
+const { AES_GCM } = require("asmcrypto.js");
+const { formatToTyped } = require("./buffer");
 
 const AES_GCM_TAG_BYTE_LEN = 16;
 
