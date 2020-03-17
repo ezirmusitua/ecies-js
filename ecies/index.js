@@ -1,0 +1,16 @@
+const { EC_ALGOS, ECIES } = require("./src/ecies");
+const { X963KDF } = require("./src/kdf");
+const { AES_GCM } = require("./src/aes");
+const { readPrivateKeyFromKeyPem, readPublicKeyFromCertPem } = require("./src/pem");
+const BufferHelper = require('./src/buffer');
+const kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM = require("./src/kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM");
+
+module.exports = {
+  ECIES,
+  AES_GCM,
+  X963KDF,
+  readPublicKeyFromCertPem,
+  readPrivateKeyFromKeyPem,
+  kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM,
+  BufferHelper
+};
