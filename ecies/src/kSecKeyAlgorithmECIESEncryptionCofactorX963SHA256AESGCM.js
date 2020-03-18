@@ -5,6 +5,7 @@ const {
   concatArrayBuffer,
   fromBase64,
   unicodeToUint8Array,
+  uint8ArrayToUnicode,
   toBase64,
   formatToTyped
 } = require("./buffer");
@@ -39,14 +40,15 @@ class OutputHandler {
     return uint8ArrayToUnicode(eciesInstance.aesHandler.plaintext);
   }
   buildEnc(eciesInstance) {
-    const publicCodePoint = formatToTyped(eciesInstance.ecdh.getPublic().encode(), Uint8Array);
+    const publicCodePoint = formatToTyped(
+      eciesInstance.ecdh.getPublic().encode(),
+      Uint8Array
+    );
     const encrypted = eciesInstance.aesHandler.ciphertext;
     const tag = eciesInstance.aesHandler.tag;
-    console.log(concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array));
-    // return toBase64(
-    //   concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array)
-    // );
-    return concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array)
+    return toBase64(
+      concatArrayBuffer([publicCodePoint, encrypted, tag], Uint8Array)
+    );
   }
 }
 
@@ -65,12 +67,12 @@ function kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM(ecAlgo) {
   let pubBytesLen = 65;
   let aesKeyBytesLen = 16;
   const formattedEcAlgo = EC_ALGOS[ecAlgo];
-  if (["secp256k1", "prime256v1"].indexOf(formattedEcAlgo) === -1) {
+  if (["p256k1", "p256"].indexOf(formattedEcAlgo) === -1) {
     aesKeyBytesLen = 32;
     // TODO: Update public key bytes length
     // pubBytesLen = ??;
   }
-
+  
   return {
     encrypt(pubKey, message) {
       const ecies = createECIESInstance(
@@ -81,7 +83,8 @@ function kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM(ecAlgo) {
       return ecies
         .setPlaintext(message)
         .computeSecret(pubKey)
-        .deriveKey(ecies.ecdh.publicCodePoint)
+        .deriveKey(formatToTyped(ecies.ecdh.getPublic().encode(), Uint8Array))
+        // .deriveKey("")
         .encrypt()
         .outputEnc();
     },
@@ -94,7 +97,8 @@ function kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM(ecAlgo) {
       return ecies
         .setCiphertext(ciphertext)
         .computeSecret(null, prvKey)
-        .deriveKey(ecies.inputHandler.getEphemeralPublicKey(ciphertext))
+        .deriveKey(ecies.inputHandler.getEphemeralPublicKey(ecies._ciphertext))
+        // .deriveKey("")
         .decrypt()
         .outputDec();
     }

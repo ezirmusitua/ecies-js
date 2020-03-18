@@ -24,14 +24,17 @@ class GCM {
     const formattedKey = formatToTyped(key, Uint8Array);
     const formattedIv = formatToTyped(iv, Uint8Array);
     const formattedMessage = formatToTyped(message, Uint8Array);
-    this.ciphertext = AES_GCM.encrypt(
-      new Uint8Array(formattedMessage),
+
+    const output = AES_GCM.encrypt(
+      formattedMessage,
       formattedKey,
       formattedIv,
       "",
       this.tagBlen
     );
-    this.tag = this.ciphertext.slice(-this.tagBlen);
+
+    this.ciphertext = output.slice(0, -this.tagBlen);
+    this.tag = output.slice(-this.tagBlen);
     return this;
   }
 
@@ -45,13 +48,14 @@ class GCM {
     if (this._completed) return this;
     const formattedKey = formatToTyped(key, Uint8Array);
     const formattedIv = formatToTyped(iv, Uint8Array);
-    this.ciphertext = formatToTyped(ciphertext, Uint8Array);
+    const encrypted = formatToTyped(ciphertext, Uint8Array);
+
     this.plaintext = AES_GCM.decrypt(
-      this.ciphertext,
+      encrypted,
       formattedKey,
       formattedIv,
       "",
-      AES_GCM_TAG_BYTE_LEN
+      this.tagBlen
     );
     return this;
   }

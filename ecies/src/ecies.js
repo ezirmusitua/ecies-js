@@ -12,6 +12,7 @@
 // crypto.createCipherIv - aes-256-gcm
 
 const { ec } = require("elliptic");
+const { toBase64 } = require("./buffer");
 const EC = ec;
 
 const SupportedECAlogs = ["p256", "secp256k1", "p384", "p521"];
@@ -90,13 +91,18 @@ class ECIES {
         "Must Pass User Public Or Private Key To Generate SharedSecret"
       );
     }
+    let curve;
     if (userPubKey) {
-      this.ecdh = Curves[this._ecAlgo].genKeyPair();
+      const curve = Curves[this._ecAlgo];
+      this.ecdh = curve.genKeyPair();
       const publicKeyPair = Curves[this._ecAlgo].keyFromPublic(userPubKey);
-      this._sharedSecret = this.ecdh.derive(publicKeyPair.getPublic());
+      this._sharedSecret = this.ecdh
+        .derive(publicKeyPair.getPublic())
+        .toArrayLike(Uint8Array);
       return this;
     }
-    this.ecdh = Curves[this._ecAlgo].keyFromPrivate(userPrvKey);
+    curve = Curves[this._ecAlgo];
+    this.ecdh = curve.keyFromPrivate(userPrvKey);
     if (!this.inputHandler) {
       throw new Error("Set Input Handler Before Compute Shared Secret");
     }
@@ -106,10 +112,10 @@ class ECIES {
     const ephemeralPublicKey = this.inputHandler.getEphemeralPublicKey(
       this._ciphertext
     );
-    const ephemeralPublicKeyPair = Curves[this._ecAlgo].keyFromPublic(
-      ephemeralPublicKey
-    );
-    this._sharedSecret = this.ecdh.derive(ephemeralPublicKeyPair.getPublic());
+    const ephemeralPublicKeyPair = curve.keyFromPublic(ephemeralPublicKey);
+    this._sharedSecret = this.ecdh
+      .derive(ephemeralPublicKeyPair.getPublic())
+      .toArrayLike(Uint8Array);
     return this;
   }
 
@@ -129,16 +135,16 @@ class ECIES {
     if (!this.aesHandler) {
       throw new Error("Set AES Encryption Handler Before Encrypt");
     }
-    const symKey = this._derivedKey.slice(0, this._aesKeyBLen);
-    const symIv = this._derivedKey.slice(-this._aesIvBLen);
+    const aesKey = this._derivedKey.slice(0, this._aesKeyBLen);
+    const aesIv = this._derivedKey.slice(-this._aesIvBLen);
     const message = this.inputHandler.getMessage(this._plaintext);
-    this.aesHandler.encrypt(symKey, symIv, message);
+    this.aesHandler.encrypt(aesKey, aesIv, message);
     return this;
   }
 
   decrypt() {
     if (!this.aesHandler) {
-      throw new Error("Set Symmertric Encryption Handler Before Decrypt");
+      throw new Error("Set AES Encryption Handler Before Decrypt");
     }
     const aesKey = this._derivedKey.slice(0, this._aesKeyBLen);
     const aesIv = this._derivedKey.slice(-this._aesIvBLen);
@@ -159,72 +165,3 @@ module.exports = {
   ECIES,
   EC_ALGOS
 };
-
-// const KDF_DIGEST_ALGO = "sha256";
-// const UNCOMPRESSED_PUBLIC_KEY_BYTE_LEN = 65;
-// const AES_KEY_BIT_LEN = 128;
-// const AES_KEY_BYTE_LEN = AES_KEY_BIT_LEN / 8;
-// const AES_IV_BYTE_LEN = 16;
-// const KDF_KEY_LEN = AES_KEY_BYTE_LEN + AES_IV_BYTE_LEN;
-
-// /**
-//  * encrypt
-//  * @param {Uint8Array} receiverPublicKey
-//  * @param {Uint8Array} msg
-//  * @returns {Uint8Array}
-//  */
-// export async function encrypt(receiverPublicKey, msg) {
-//   // [x] generate ephemeral key pair and sharedSecret
-//   const ephemeralKeyPair = ECDH.generateKeyPair();
-//   console.log("receiver public hex: ", toBase64(receiverPublicKey));
-//   const sharedSecret = ECDH.computeSecret(
-//     ephemeralKeyPair.getPrivate(),
-//     receiverPublicKey
-//   );
-//   // [x] derive aes & mac key using kdf algorithm
-//   console.log(ephemeralKeyPair.getPublic());
-//   const ephemeralPublicKey = formatToTyped(
-//     ephemeralKeyPair.getPublic().encode(),
-//     Uint8Array
-//   );
-//   const derivedKey = x963kdf(
-//     sharedSecret.toArrayLike(Uint8Array),
-//     KDF_DIGEST_ALGO,
-//     KDF_KEY_LEN,
-//     ephemeralPublicKey
-//   );
-//   const aesKey = derivedKey.slice(0, AES_KEY_BYTE_LEN);
-//   const aesIV = derivedKey.slice(AES_KEY_BYTE_LEN);
-//   const encrypted = await aesGcmEncrypt(aesKey, aesIV, msg);
-//   // [x] use aes-128-gcm to encrypt
-//   // [x] concat ephemeralPublicKey|encrypted(ciphertext|tag)
-//   return concatArrayBuffer([ephemeralPublicKey, encrypted], Uint8Array);
-// }
-
-// /**
-//  * decrypt
-//  * @param {Uint8Array} receiverPrivateKey
-//  * @param {Uint8Array} msg
-//  * @returns {Uint8Array}
-//  */
-// export async function decrypt(receiverPrivateKey, msg) {
-//   // [x] generate sharedSecret
-//   const ephemeralPublicKey = msg.slice(0, UNCOMPRESSED_PUBLIC_KEY_BYTE_LEN);
-//   console.log("decrypt");
-//   const sharedSecret = ECDH.computeSecret(
-//     receiverPrivateKey,
-//     ephemeralPublicKey
-//   );
-//   // [x] derive aes & mac key using kdf algorithm
-//   const derivedKey = x963kdf(
-//     sharedSecret.toArrayLike(Uint8Array),
-//     KDF_DIGEST_ALGO,
-//     KDF_KEY_LEN,
-//     ephemeralPublicKey
-//   );
-//   // [x] use aes-128-gcm to decrypt
-//   const encrypted = msg.slice(UNCOMPRESSED_PUBLIC_KEY_BYTE_LEN);
-//   const aesKey = derivedKey.slice(0, AES_KEY_BYTE_LEN);
-//   const aesIV = derivedKey.slice(AES_KEY_BYTE_LEN);
-//   return aesGcmDecrypt(aesKey, aesIV, encrypted);
-// }
