@@ -1,0 +1,23 @@
+{
+  "name": "ecies-js",
+  "version": "0.1.0",
+  "description": "",
+  "main": "ecies/index.js",
+  "root_package": "ecies",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezirmusitua/ecies-js.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ezirmusitua/ecies-js/issues"
+  },
+  "homepage": "https://github.com/ezirmusitua/ecies-js#readme"
+}
